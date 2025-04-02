@@ -4,6 +4,7 @@ use output::{OutputMode, display_results, generate_test_results};
 
 mod domain;
 mod output;
+mod api;
 
 #[derive(Parser)]
 #[command(name = "namekit")]
@@ -36,9 +37,15 @@ enum Commands {
         #[arg(required = true)]
         terms: Vec<String>,
     },
+    
+    Prompt {
+        /// Query to send to the domain prompt API
+        query: String,
+    },
 }
 
-fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     // Determine output mode
@@ -79,6 +86,28 @@ fn main() -> std::io::Result<()> {
 
             // Display the filtered results
             display_results(&filtered_results, output_mode)?;
+        }
+        Commands::Prompt { query } => {
+            println!("Sending prompt to API: {}", query);
+            
+            // Call the API to get domain results
+            println!("Connecting to API at http://127.0.0.1:8000/domains/prompt...");
+            println!("Streaming results (this may take a moment):");
+            
+            match api::prompt_domains(query).await {
+                Ok(results) => {
+                    println!("\nReceived {} domain results", results.len());
+                    
+                    // Filter results based on flags
+                    let filtered_results = filter_results(&results, cli.show_taken, cli.hide_premium);
+                    
+                    // Display the filtered results
+                    display_results(&filtered_results, output_mode)?;
+                }
+                Err(e) => {
+                    eprintln!("Error fetching domain results: {}", e);
+                }
+            }
         }
     }
 
