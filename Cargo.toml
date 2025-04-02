@@ -2,6 +2,7 @@
 name = "namekit"
 version = "0.0.1"
 edition = "2024"
+description = "A command line toolkit for quickly exploring domain names available for registration"
 license = "GPL-3.0-or-later"
 
 [dependencies]
