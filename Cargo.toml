@@ -2,6 +2,7 @@
 name = "namekit"
 version = "0.0.1"
 edition = "2024"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }

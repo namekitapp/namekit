@@ -32,3 +32,8 @@ Commands:
   exact    Search for an exact domain name
   search   Search for domain names based on multiple terms
   help     Print this message or the help of the given subcommand(s)
+```
+
+## License
+
+[GPLv3](LICENSE)
