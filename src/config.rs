@@ -36,9 +36,19 @@ impl From<serde_json::Error> for ConfigError {
 
 impl std::error::Error for ConfigError {}
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub api_token: Option<String>,
+    pub api_server: Option<String>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            api_token: None,
+            api_server: Some("https://api.namedrop.dev".to_string()),
+        }
+    }
 }
 
 impl Config {
@@ -80,6 +90,18 @@ impl Config {
 
     pub fn get_token(&self) -> Result<String, ConfigError> {
         self.api_token.clone().ok_or(ConfigError::TokenNotSet)
+    }
+
+    pub fn set_api_server(&mut self, server: String) -> Result<(), ConfigError> {
+        self.api_server = Some(server);
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn get_api_server(&self) -> String {
+        self.api_server
+            .clone()
+            .unwrap_or_else(|| "https://api.namedrop.dev".to_string())
     }
 }
 

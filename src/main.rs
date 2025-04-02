@@ -58,6 +58,12 @@ enum ConfigCommands {
         token: String,
     },
 
+    /// Set the API server URL
+    SetApiServer {
+        /// The API server URL to use (default: https://api.namedrop.dev)
+        server: String,
+    },
+
     /// Show the current configuration
     Show,
 }
@@ -150,6 +156,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let path = config::get_config_path();
                     println!("Configuration saved to: {}", path.display());
                 }
+                ConfigCommands::SetApiServer { server } => {
+                    let mut config = config::Config::load()?;
+                    config.set_api_server(server.clone())?;
+                    println!("API server set to: {}", server);
+                    
+                    // Show the config file path for reference
+                    let path = config::get_config_path();
+                    println!("Configuration saved to: {}", path.display());
+                }
                 ConfigCommands::Show => {
                     let config = config::Config::load()?;
                     println!("Current configuration:");
@@ -168,6 +183,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("API Token: Not set");
                         }
                     }
+                    
+                    // Show the API server
+                    println!("API Server: {}", config.get_api_server());
 
                     let path = config::get_config_path();
                     println!("Configuration file: {}", path.display());

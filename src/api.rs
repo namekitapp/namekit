@@ -1,10 +1,18 @@
 use crate::domain::DomainResult;
+use crate::config;
 use reqwest::Client;
 use std::error::Error;
 use std::io::{self, BufRead};
 
 pub async fn prompt_domains(query: &str, token: &str) -> Result<Vec<DomainResult>, Box<dyn Error>> {
     let client = Client::new();
+    
+    // Load config to get the API server URL
+    let config = config::Config::load()?;
+    let api_server = config.get_api_server();
+    
+    // Create the endpoint URL
+    let endpoint = format!("{}/domains/prompt", api_server);
 
     // Create the request body with the query parameter
     let body = serde_json::json!({
@@ -13,11 +21,11 @@ pub async fn prompt_domains(query: &str, token: &str) -> Result<Vec<DomainResult
         "tlds": ["com"]
     });
 
-    println!("Sending request to API...");
+    println!("Sending request to API: {}", endpoint);
 
     // Make the POST request to the API with the token from config
     let response = client
-        .post("https://api.namedrop.dev/domains/prompt")
+        .post(&endpoint)
         .header("Authorization", format!("Bearer {}", token))
         .json(&body)
         .send()
