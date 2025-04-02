@@ -3,7 +3,7 @@ use reqwest::Client;
 use std::error::Error;
 use std::io::{self, BufRead};
 
-pub async fn prompt_domains(query: &str) -> Result<Vec<DomainResult>, Box<dyn Error>> {
+pub async fn prompt_domains(query: &str, token: &str) -> Result<Vec<DomainResult>, Box<dyn Error>> {
     let client = Client::new();
 
     // Create the request body with the query parameter
@@ -15,9 +15,10 @@ pub async fn prompt_domains(query: &str) -> Result<Vec<DomainResult>, Box<dyn Er
 
     println!("Sending request to API...");
 
-    // Make the POST request to the API
+    // Make the POST request to the API with the token from config
     let response = client
         .post("https://api.namedrop.dev/domains/prompt")
+        .header("Authorization", format!("Bearer {}", token))
         .json(&body)
         .send()
         .await?;
