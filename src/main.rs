@@ -1,7 +1,9 @@
 use clap::{Parser, Subcommand};
-mod output;
+use domain::DomainResult;
+use output::{OutputMode, display_results, generate_test_results};
 
-use output::{DomainResult, OutputMode, display_results, generate_test_results};
+mod domain;
+mod output;
 
 #[derive(Parser)]
 #[command(name = "namekit")]
@@ -46,10 +48,10 @@ fn main() -> std::io::Result<()> {
             // Add the exact term as first result
             results.insert(
                 0,
-                DomainResult {
-                    name: format!("{}.com", term),
-                    available: term.len() > 10, // Just a simple rule for demo purposes
-                },
+                DomainResult::new(
+                    format!("{}.com", term),
+                    term.len() > 10, // Just a simple rule for demo purposes
+                ),
             );
 
             // Display the results
