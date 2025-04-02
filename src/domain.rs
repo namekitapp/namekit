@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct DomainResult {
     pub name: String,
     pub available: bool,

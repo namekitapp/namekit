@@ -14,6 +14,14 @@ struct Cli {
     #[arg(short, long, default_value = "grid")]
     output: String,
 
+    /// Show taken domains (by default only available domains are shown)
+    #[arg(long)]
+    show_taken: bool,
+
+    /// Hide premium domains (by default premium domains are shown)
+    #[arg(long)]
+    hide_premium: bool,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -54,8 +62,11 @@ fn main() -> std::io::Result<()> {
                 ),
             );
 
-            // Display the results
-            display_results(&results, output_mode)?;
+            // Filter results based on flags
+            let filtered_results = filter_results(&results, cli.show_taken, cli.hide_premium);
+
+            // Display the filtered results
+            display_results(&filtered_results, output_mode)?;
         }
         Commands::Search { terms } => {
             println!("Searching for domains with terms: {:?}", terms);
@@ -63,10 +74,38 @@ fn main() -> std::io::Result<()> {
             // For demonstration, generate test results
             let results = generate_test_results();
 
-            // Display the results
-            display_results(&results, output_mode)?;
+            // Filter results based on flags
+            let filtered_results = filter_results(&results, cli.show_taken, cli.hide_premium);
+
+            // Display the filtered results
+            display_results(&filtered_results, output_mode)?;
         }
     }
 
     Ok(())
+}
+
+/// Filter domain results based on show_taken and hide_premium flags
+fn filter_results(
+    results: &[DomainResult],
+    show_taken: bool,
+    hide_premium: bool,
+) -> Vec<DomainResult> {
+    results
+        .iter()
+        .filter(|result| {
+            // Filter out taken domains if show_taken is false
+            if !show_taken && !result.available {
+                return false;
+            }
+
+            // Filter out premium domains if hide_premium is true
+            if hide_premium && result.premium {
+                return false;
+            }
+
+            true
+        })
+        .cloned()
+        .collect()
 }
