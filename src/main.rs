@@ -9,7 +9,7 @@ mod output;
 
 #[derive(Parser)]
 #[command(name = "namekit")]
-#[command(version = "0.0.1")]
+#[command(version = "0.1.0")]
 #[command(about = "A command line toolkit for quickly exploring domain names available for registration", long_about = None)]
 struct Cli {
     /// Output format: 'list' for single line or 'grid' for terminal-width grid
@@ -160,7 +160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut config = config::Config::load()?;
                     config.set_api_server(server.clone())?;
                     println!("API server set to: {}", server);
-                    
+
                     // Show the config file path for reference
                     let path = config::get_config_path();
                     println!("Configuration saved to: {}", path.display());
@@ -183,7 +183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("API Token: Not set");
                         }
                     }
-                    
+
                     // Show the API server
                     println!("API Server: {}", config.get_api_server());
 

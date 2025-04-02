@@ -939,12 +939,11 @@ dependencies = [
 
 [[package]]
 name = "namekit"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "clap",
  "crossterm",
  "dirs",
- "futures-util",
  "ratatui",
  "reqwest",
  "serde",
