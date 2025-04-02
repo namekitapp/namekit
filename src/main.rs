@@ -1,41 +1,70 @@
 use clap::{Parser, Subcommand};
+mod output;
+
+use output::{DomainResult, OutputMode, display_results, generate_test_results};
 
 #[derive(Parser)]
 #[command(name = "namekit")]
 #[command(version = "0.0.1")]
 #[command(about = "A command line toolkit for quickly exploring domain names available for registration", long_about = None)]
 struct Cli {
+    /// Output format: 'list' for single line or 'grid' for terminal-width grid
+    #[arg(short, long, default_value = "grid")]
+    output: String,
+
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Search for an exact domain name
     Exact {
-        /// The exact term to search for
         term: String,
     },
 
-    /// Search for domain names based on multiple terms
     Search {
-        /// Search terms
         #[arg(required = true)]
         terms: Vec<String>,
     },
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
+
+    // Determine output mode
+    let output_mode = match cli.output.to_lowercase().as_str() {
+        "grid" => OutputMode::Grid,
+        _ => OutputMode::List,
+    };
 
     match &cli.command {
         Commands::Exact { term } => {
             println!("Searching for exact domain: {}", term);
-            // Implement exact domain search logic here
+
+            // For demonstration, generate test results with the exact term
+            let mut results = generate_test_results();
+            // Add the exact term as first result
+            results.insert(
+                0,
+                DomainResult {
+                    name: format!("{}.com", term),
+                    available: term.len() > 10, // Just a simple rule for demo purposes
+                },
+            );
+
+            // Display the results
+            display_results(&results, output_mode)?;
         }
         Commands::Search { terms } => {
             println!("Searching for domains with terms: {:?}", terms);
-            // Implement multi-term domain search logic here
+
+            // For demonstration, generate test results
+            let results = generate_test_results();
+
+            // Display the results
+            display_results(&results, output_mode)?;
         }
     }
+
+    Ok(())
 }
