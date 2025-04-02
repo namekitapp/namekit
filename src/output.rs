@@ -1,3 +1,7 @@
+use crossterm::{
+    execute,
+    style::{Color as CrosstermColor, ResetColor, SetForegroundColor},
+};
 use std::io;
 
 /// Represents a domain name and its availability status
@@ -22,37 +26,62 @@ pub fn display_list(results: &[DomainResult]) -> io::Result<()> {
         } else {
             "Taken"
         };
-        let color_code = if result.available { 32 } else { 31 }; // 32 for green, 31 for red
-        println!("\x1b[{}m{}\x1b[0m ({})", color_code, result.name, status);
+        let color = if result.available {
+            CrosstermColor::Green
+        } else {
+            CrosstermColor::Red
+        };
+
+        // Use crossterm's coloring
+        execute!(io::stdout(), SetForegroundColor(color),)?;
+
+        print!("{}", result.name);
+
+        execute!(io::stdout(), ResetColor,)?;
+
+        println!(" ({})", status);
     }
     Ok(())
 }
 
+/// Display domain results in a grid view using standard terminal output
 pub fn display_grid(results: &[DomainResult]) -> io::Result<()> {
+    // Calculate terminal width
     let (width, _) = crossterm::terminal::size()?;
 
+    // Calculate optimal number of columns based on terminal width
     let max_domain_length = results.iter().map(|r| r.name.len()).max().unwrap_or(20);
 
     let column_width = max_domain_length + 4; // Add some padding
     let num_columns = std::cmp::max(1, width as usize / column_width);
 
+    // Print header
     println!("\n{}", "Domain Name Search Results".to_string());
     println!("{}\n", "=".repeat(width as usize - 2));
 
+    // Print results in a grid
     let mut current_col = 0;
 
     for result in results {
-        let color_code = if result.available { 32 } else { 31 }; // 32 for green, 31 for red
+        // Determine color based on availability
+        let color = if result.available {
+            CrosstermColor::Green
+        } else {
+            CrosstermColor::Red
+        };
 
-        print!(
-            "\x1b[{}m{:<width$}\x1b[0m",
-            color_code,
-            result.name,
-            width = column_width
-        );
+        // Use crossterm's coloring
+        execute!(io::stdout(), SetForegroundColor(color),)?;
+
+        // Print the domain with padding
+        print!("{:<width$}", result.name, width = column_width);
+
+        // Reset color
+        execute!(io::stdout(), ResetColor,)?;
 
         current_col += 1;
 
+        // Move to next line if we've filled the row
         if current_col >= num_columns {
             println!();
             current_col = 0;
@@ -69,6 +98,7 @@ pub fn display_grid(results: &[DomainResult]) -> io::Result<()> {
     Ok(())
 }
 
+/// Display domain search results based on the specified output mode
 pub fn display_results(results: &[DomainResult], mode: OutputMode) -> io::Result<()> {
     match mode {
         OutputMode::List => display_list(results),
@@ -76,6 +106,7 @@ pub fn display_results(results: &[DomainResult], mode: OutputMode) -> io::Result
     }
 }
 
+/// Generate test results for demonstration purposes
 pub fn generate_test_results() -> Vec<DomainResult> {
     vec![
         DomainResult {
