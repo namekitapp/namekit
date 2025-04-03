@@ -30,19 +30,33 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Search for domain names
     Search {
+        #[command(subcommand)]
+        mode: SearchMode,
+    },
+
+    /// Configure the application
+    Config {
+        #[command(subcommand)]
+        action: ConfigCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum SearchMode {
+    /// Search for domains using AI-powered suggestions
+    AI {
+        /// Terms to use for domain search
         #[arg(required = true)]
         terms: Vec<String>,
     },
 
+    /// Search for a specific domain name with different TLDs
     TLD {
+        /// Domain name to check with different TLDs
         #[arg(required = true)]
         query: String,
-    },
-
-    Config {
-        #[command(subcommand)]
-        action: ConfigCommands,
     },
 }
 
@@ -75,81 +89,85 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match &cli.command {
-        Commands::Search { terms } => {
-            println!("Searching for domains with terms: {:?}", terms);
+        Commands::Search { mode } => {
+            match mode {
+                SearchMode::AI { terms } => {
+                    println!("Searching for domains with AI suggestions: {:?}", terms);
 
-            // Load config to get the API token
-            let config = config::Config::load()?;
-            let token = match config.get_token() {
-                Ok(token) => token,
-                Err(_) => {
-                    eprintln!(
-                        "API token not set. Please set a token with 'namekit config set-token <TOKEN>'"
-                    );
-                    return Ok(());
+                    // Load config to get the API token
+                    let config = config::Config::load()?;
+                    let token = match config.get_token() {
+                        Ok(token) => token,
+                        Err(_) => {
+                            eprintln!(
+                                "API token not set. Please set a token with 'namekit config set-token <TOKEN>'"
+                            );
+                            return Ok(());
+                        }
+                    };
+
+                    // Call the API to get domain stream
+                    println!("Connecting to API...");
+
+                    match api::stream_domains(&terms.join(" "), "ai", &token).await {
+                        Ok(domain_stream) => {
+                            println!("\nReceiving domain results...");
+
+                            // Filter the stream based on flags
+                            let filtered_stream = domain_stream
+                                .filter(move |domain| {
+                                    let show = (domain.available || cli.show_taken)
+                                        && (!domain.premium || !cli.hide_premium);
+                                    async move { show }
+                                })
+                                .boxed(); // Box the stream to make it Unpin
+
+                            // Display the filtered results
+                            display_results(filtered_stream, output_mode).await?;
+                        }
+                        Err(e) => {
+                            eprintln!("Error fetching domain results: {}", e);
+                        }
+                    }
                 }
-            };
+                SearchMode::TLD { query } => {
+                    println!("Searching for all TLDs for: {}", query);
 
-            // Call the API to get domain stream
-            println!("Connecting to API...");
+                    // Load config to get the API token
+                    let config = config::Config::load()?;
+                    let token = match config.get_token() {
+                        Ok(token) => token,
+                        Err(_) => {
+                            eprintln!(
+                                "API token not set. Please set a token with 'namekit config set-token <TOKEN>'"
+                            );
+                            return Ok(());
+                        }
+                    };
 
-            match api::stream_domains(&terms.join(" "), "ai", &token).await {
-                Ok(domain_stream) => {
-                    println!("\nReceiving domain results...");
+                    // Call the API to get domain stream
+                    println!("Connecting to API...");
 
-                    // Filter the stream based on flags
-                    let filtered_stream = domain_stream
-                        .filter(move |domain| {
-                            let show = (domain.available || cli.show_taken)
-                                && (!domain.premium || !cli.hide_premium);
-                            async move { show }
-                        })
-                        .boxed(); // Box the stream to make it Unpin
+                    match api::stream_domains(query, "tld", &token).await {
+                        Ok(domain_stream) => {
+                            println!("\nReceiving domain results...");
 
-                    // Display the filtered results
-                    display_results(filtered_stream, output_mode).await?;
-                }
-                Err(e) => {
-                    eprintln!("Error fetching domain results: {}", e);
-                }
-            }
-        }
-        Commands::TLD { query } => {
-            println!("Searching for all TLDs for: {}", query);
+                            // Filter the stream based on flags
+                            let filtered_stream = domain_stream
+                                .filter(move |domain| {
+                                    let show = (domain.available || cli.show_taken)
+                                        && (!domain.premium || !cli.hide_premium);
+                                    async move { show }
+                                })
+                                .boxed(); // Box the stream to make it Unpin
 
-            // Load config to get the API token
-            let config = config::Config::load()?;
-            let token = match config.get_token() {
-                Ok(token) => token,
-                Err(_) => {
-                    eprintln!(
-                        "API token not set. Please set a token with 'namekit config set-token <TOKEN>'"
-                    );
-                    return Ok(());
-                }
-            };
-
-            // Call the API to get domain stream
-            println!("Connecting to API...");
-
-            match api::stream_domains(query, "tld", &token).await {
-                Ok(domain_stream) => {
-                    println!("\nReceiving domain results...");
-
-                    // Filter the stream based on flags
-                    let filtered_stream = domain_stream
-                        .filter(move |domain| {
-                            let show = (domain.available || cli.show_taken)
-                                && (!domain.premium || !cli.hide_premium);
-                            async move { show }
-                        })
-                        .boxed(); // Box the stream to make it Unpin
-
-                    // Display the filtered results
-                    display_results(filtered_stream, output_mode).await?;
-                }
-                Err(e) => {
-                    eprintln!("Error fetching domain results: {}", e);
+                            // Display the filtered results
+                            display_results(filtered_stream, output_mode).await?;
+                        }
+                        Err(e) => {
+                            eprintln!("Error fetching domain results: {}", e);
+                        }
+                    }
                 }
             }
         }

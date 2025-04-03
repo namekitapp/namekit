@@ -16,23 +16,29 @@ $ cargo install namekit
 # Show help information
 $ namekit --help
 
-# Search for an exact domain name (default: grid view, only available domains)
-$ namekit exact example
+# Search for domain names using AI suggestions
+$ namekit search ai tech startup saas
 
-# Search for an exact domain name with list view
-$ namekit --output list exact example
+# Search for a specific domain name with different TLDs
+$ namekit search tld example
+
+# Search with list view instead of grid view
+$ namekit --output list search ai tech startup
 
 # Show all domains including taken ones
-$ namekit --show-taken exact example
+$ namekit --show-taken search tld mydomain
 
 # Hide premium domains
-$ namekit --hide-premium exact example
+$ namekit --hide-premium search ai business app
 
-# Search for domain names with multiple terms
-$ namekit search term1 term2 term3
+# Configure your API token
+$ namekit config set-token YOUR_API_TOKEN
 
-# Search with list view and show all domains
-$ namekit -o list --show-taken search term1 term2 term3
+# Set a custom API server
+$ namekit config set-api-server https://custom-api-server.com
+
+# View your current configuration
+$ namekit config show
 ```
 
 ## Command Structure
@@ -48,9 +54,18 @@ Options:
   -V, --version          Print version
 
 Commands:
-  exact    Search for an exact domain name
-  search   Search for domain names based on multiple terms
+  search   Search for domain names
+  config   Configure the application
   help     Print this message or the help of the given subcommand(s)
+
+Search Commands:
+  ai       Search for domains using AI-powered suggestions
+  tld      Search for a specific domain name with different TLDs
+
+Config Commands:
+  set-token       Set the API token for accessing the domain API
+  set-api-server  Set the API server URL
+  show            Show the current configuration
 ```
 
 ## Output Modes
