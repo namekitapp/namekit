@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Search { mode } => {
             match mode {
                 SearchMode::AI { terms } => {
-                    println!("Searching for domains with AI suggestions: {:?}", terms);
+                    println!("Searching for domains with query terms: {:?}", terms);
 
                     // Load config to get the API token
                     let config = config::Config::load()?;
@@ -106,13 +106,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     };
 
-                    // Call the API to get domain stream
-                    println!("Connecting to API...");
-
                     match api::stream_domains(&terms.join(" "), "ai", &token).await {
                         Ok(domain_stream) => {
-                            println!("\nReceiving domain results...");
-
                             // Filter the stream based on flags
                             let filtered_stream = domain_stream
                                 .filter(move |domain| {
@@ -145,13 +140,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     };
 
-                    // Call the API to get domain stream
-                    println!("Connecting to API...");
-
                     match api::stream_domains(query, "tld", &token).await {
                         Ok(domain_stream) => {
-                            println!("\nReceiving domain results...");
-
                             // Filter the stream based on flags
                             let filtered_stream = domain_stream
                                 .filter(move |domain| {

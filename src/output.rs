@@ -45,9 +45,6 @@ where
     let column_width = max_domain_length + 4; // Add some padding
     let num_columns = std::cmp::max(1, width as usize / column_width);
 
-    println!("\n{}", "Domain Name Search Results".to_string());
-    println!("{}\n", "=".repeat(width as usize - 2));
-
     let mut current_col = 0;
     let mut stream = Box::pin(stream);
 

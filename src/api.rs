@@ -35,10 +35,8 @@ pub async fn stream_domains(
             let body = serde_json::json!({
                 "q": query,
                 "mode": mode,
-                "tlds": ["com"]
+                "tlds": "com,dev,app",
             });
-
-            println!("Sending request to API: {}", endpoint);
 
             // Make the POST request to the API with the token from config
             match client
