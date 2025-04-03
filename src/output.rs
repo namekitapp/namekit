@@ -12,13 +12,6 @@ pub enum OutputMode {
 
 pub fn display_list(results: &[DomainResult]) -> io::Result<()> {
     for result in results {
-        let status = if result.available {
-            "Available"
-        } else {
-            "Taken"
-        };
-        let premium_status = if result.premium { " (Premium)" } else { "" };
-
         let color = if result.premium {
             CrosstermColor::Yellow
         } else if result.available {
@@ -26,14 +19,9 @@ pub fn display_list(results: &[DomainResult]) -> io::Result<()> {
         } else {
             CrosstermColor::Red
         };
-
-        execute!(io::stdout(), SetForegroundColor(color),)?;
-
-        print!("{}", result.name);
-
-        execute!(io::stdout(), ResetColor,)?;
-
-        println!(" ({}){}", status, premium_status);
+        execute!(io::stdout(), SetForegroundColor(color))?;
+        println!("{}", result.name);
+        execute!(io::stdout(), ResetColor)?;
     }
     Ok(())
 }
