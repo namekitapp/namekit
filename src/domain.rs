@@ -8,7 +8,7 @@ pub struct DomainResult {
 }
 
 impl DomainResult {
-    pub fn new(name: String, available: bool) -> Self {
+    pub fn _new(name: String, available: bool) -> Self {
         Self {
             name,
             available,

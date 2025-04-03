@@ -3,6 +3,8 @@ use crossterm::{
     execute,
     style::{Color as CrosstermColor, ResetColor, SetForegroundColor},
 };
+use futures_core::stream::Stream;
+use futures_util::StreamExt;
 use std::io;
 
 pub enum OutputMode {
@@ -10,8 +12,13 @@ pub enum OutputMode {
     Grid,
 }
 
-pub fn display_list(results: &[DomainResult]) -> io::Result<()> {
-    for result in results {
+pub async fn display_list<S>(stream: S) -> io::Result<()>
+where
+    S: Stream<Item = DomainResult> + Unpin,
+{
+    let mut stream = Box::pin(stream);
+
+    while let Some(result) = stream.next().await {
         let color = if result.premium {
             CrosstermColor::Yellow
         } else if result.available {
@@ -26,10 +33,14 @@ pub fn display_list(results: &[DomainResult]) -> io::Result<()> {
     Ok(())
 }
 
-pub fn display_grid(results: &[DomainResult]) -> io::Result<()> {
+pub async fn display_grid<S>(stream: S) -> io::Result<()>
+where
+    S: Stream<Item = DomainResult> + Unpin,
+{
     let (width, _) = crossterm::terminal::size()?;
 
-    let max_domain_length = results.iter().map(|r| r.name.len()).max().unwrap_or(20);
+    // Use static max domain length of 20 as specified
+    let max_domain_length = 20;
 
     let column_width = max_domain_length + 4; // Add some padding
     let num_columns = std::cmp::max(1, width as usize / column_width);
@@ -38,8 +49,9 @@ pub fn display_grid(results: &[DomainResult]) -> io::Result<()> {
     println!("{}\n", "=".repeat(width as usize - 2));
 
     let mut current_col = 0;
+    let mut stream = Box::pin(stream);
 
-    for result in results {
+    while let Some(result) = stream.next().await {
         let color = if result.premium {
             CrosstermColor::Yellow
         } else if result.available {
@@ -72,30 +84,12 @@ pub fn display_grid(results: &[DomainResult]) -> io::Result<()> {
 }
 
 /// Display domain search results based on the specified output mode
-pub fn display_results(results: &[DomainResult], mode: OutputMode) -> io::Result<()> {
+pub async fn display_results<S>(stream: S, mode: OutputMode) -> io::Result<()>
+where
+    S: Stream<Item = DomainResult> + Unpin,
+{
     match mode {
-        OutputMode::List => display_list(results),
-        OutputMode::Grid => display_grid(results),
+        OutputMode::List => display_list(stream).await,
+        OutputMode::Grid => display_grid(stream).await,
     }
-}
-
-/// Generate test results for demonstration purposes
-pub fn generate_test_results() -> Vec<DomainResult> {
-    vec![
-        DomainResult::new("example.com".to_string(), false),
-        DomainResult::new("example.net".to_string(), false),
-        DomainResult::new("example.org".to_string(), false),
-        DomainResult::new("example-site.com".to_string(), true),
-        DomainResult::new("my-example.com".to_string(), true),
-        DomainResult::new_with_premium("exampleapp.io".to_string(), true, true),
-        DomainResult::new("example-store.com".to_string(), false),
-        DomainResult::new_with_premium("best-example.net".to_string(), true, true),
-        DomainResult::new("example-blog.com".to_string(), false),
-        DomainResult::new("example-project.dev".to_string(), true),
-        DomainResult::new("example-cloud.io".to_string(), true),
-        DomainResult::new_with_premium("example-tech.co".to_string(), false, true),
-        DomainResult::new("example-app.net".to_string(), true),
-        DomainResult::new("example-service.org".to_string(), false),
-        DomainResult::new("example-platform.com".to_string(), true),
-    ]
 }
