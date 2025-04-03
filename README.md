@@ -2,6 +2,9 @@
 
 A command line toolkit for quickly exploring domain names available for registration.
 
+![Namekit CLI demo](demo.gif)
+
+
 ## Installation
 
 Globally install from `cargo`, installed by default to `~/.cargo/bin` -
