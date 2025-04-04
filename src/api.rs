@@ -3,9 +3,12 @@ use crate::domain::DomainResult;
 use futures_core::stream::Stream;
 use futures_util::StreamExt;
 use reqwest::Client;
+use std::env::consts::{ARCH, OS};
 use std::error::Error;
 use std::pin::Pin;
 use tokio::sync::mpsc;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub async fn stream_domains(
     query: &str,
@@ -38,9 +41,12 @@ pub async fn stream_domains(
                 "tlds": "com,dev,app",
             });
 
+            let user_agent = format!("NamekitCLI/{} ({}/{})", VERSION, OS, ARCH);
+
             // Make the POST request to the API with the token from config
             match client
                 .post(&endpoint)
+                .header("User-Agent", user_agent)
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&body)
                 .send()
