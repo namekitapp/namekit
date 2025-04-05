@@ -1,9 +1,11 @@
 [package]
 name = "namekit"
 version = "0.2.1"
-edition = "2024"
 description = "A command line toolkit for quickly exploring domain names available for registration"
+edition = "2024"
 license = "GPL-3.0-or-later"
+homepage = "https://namekit.app"
+repository = "https://github.com/namekitapp/namekit.git"
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
