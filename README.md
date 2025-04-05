@@ -1,6 +1,6 @@
 # Namekit
 
-A command line toolkit for quickly exploring domain names available for registration.
+A command line toolkit for quickly exploring domain names available for registration via **https://namekit.app**
 
 ![Namekit CLI demo](demo.gif)
 
