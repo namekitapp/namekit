@@ -53,7 +53,7 @@ enum SearchMode {
     },
 
     /// Search for a specific domain name with different TLDs
-    TLD {
+    Tld {
         /// Domain name to check with different TLDs
         #[arg(required = true)]
         query: String,
@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-                SearchMode::TLD { query } => {
+                SearchMode::Tld { query } => {
                     println!("Searching for all TLDs for: {}", query);
 
                     // Load config to get the API token
