@@ -46,7 +46,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             api_token: None,
-            api_server: Some("https://api.namedrop.dev".to_string()),
+            api_server: Some("https://api.namekit.app".to_string()),
         }
     }
 }
