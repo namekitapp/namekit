@@ -7,6 +7,16 @@ A command line toolkit for quickly exploring domain names available for registra
 
 ## Installation
 
+### Install Script
+
+Quick install of latest binary release, installed by default to `~/.local/bin` (no root required) -
+
+```sh
+$ curl -fsSL https://namekit.app/install.sh | sh
+```
+
+### Cargo
+
 Globally install from `cargo`, installed by default to `~/.cargo/bin` -
 
 ```sh
