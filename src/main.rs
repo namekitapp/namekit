@@ -7,9 +7,11 @@ mod config;
 mod domain;
 mod output;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Parser)]
 #[command(name = "namekit")]
-#[command(version = "0.2.0")]
+#[command(version = VERSION)]
 #[command(about = "A command line toolkit for quickly exploring domain names available for registration", long_about = None)]
 struct Cli {
     /// Output format: 'list' for single line or 'grid' for terminal-width grid

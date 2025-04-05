@@ -1,3 +1,4 @@
+use crate::VERSION;
 use crate::config;
 use crate::domain::DomainResult;
 use futures_core::stream::Stream;
@@ -7,8 +8,6 @@ use std::env::consts::{ARCH, OS};
 use std::error::Error;
 use std::pin::Pin;
 use tokio::sync::mpsc;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub async fn stream_domains(
     query: &str,
