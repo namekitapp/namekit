@@ -1,6 +1,6 @@
 [package]
 name = "namekit"
-version = "0.2.3"
+version = "0.2.4"
 description = "A command line toolkit for quickly exploring domain names available for registration"
 edition = "2024"
 license = "GPL-3.0-or-later"
