@@ -14,7 +14,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[command(version = VERSION)]
 #[command(about = "A command line toolkit for quickly exploring domain names available for registration", long_about = None)]
 struct Cli {
-    /// Output format: 'list' for single line or 'grid' for terminal-width grid
+    /// Output format: 'list' for single line, 'grid' for terminal-width grid, or 'json' for JSON array output
     #[arg(short, long, default_value = "grid")]
     output: String,
 
@@ -87,6 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Determine output mode
     let output_mode = match cli.output.to_lowercase().as_str() {
         "grid" => OutputMode::Grid,
+        "json" => OutputMode::Json,
         _ => OutputMode::List,
     };
 
@@ -94,8 +95,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Search { mode } => {
             match mode {
                 SearchMode::AI { terms } => {
-                    println!("Searching for domains with query terms: {:?}", terms);
-
                     // Load config to get the API token
                     let config = config::Config::load()?;
                     let token = match config.get_token() {
@@ -128,8 +127,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 SearchMode::Tld { query } => {
-                    println!("Searching for all TLDs for: {}", query);
-
                     // Load config to get the API token
                     let config = config::Config::load()?;
                     let token = match config.get_token() {
