@@ -31,7 +31,7 @@ pub async fn stream_domains(
             let api_server = config.get_api_server();
 
             // Create the endpoint URL
-            let endpoint = format!("{}/domains/prompt", api_server);
+            let endpoint = format!("{}/domains/stream", api_server);
 
             // Create the request body with the query parameter
             let body = serde_json::json!({
