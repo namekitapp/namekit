@@ -54,7 +54,14 @@ pub async fn stream_domains(
                 Ok(response) => {
                     // Check if the request was successful
                     if !response.status().is_success() {
-                        eprintln!("API request failed with status: {}", response.status());
+                        // Handle rate limiting (429 Too Many Requests) specifically
+                        if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                            eprintln!(
+                                "You've reached the limit of the free tier. Please visit https://namekit.app to upgrade your plan."
+                            );
+                        } else {
+                            eprintln!("API request failed with status: {}", response.status());
+                        }
                         return;
                     }
 

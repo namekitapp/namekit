@@ -6,7 +6,6 @@ use crossterm::{
 use futures_core::stream::Stream;
 use futures_util::StreamExt;
 use std::io;
-use serde_json;
 
 pub enum OutputMode {
     List,
@@ -88,36 +87,36 @@ where
     S: Stream<Item = DomainResult> + Unpin,
 {
     let mut stream = Box::pin(stream);
-    
+
     // Print opening bracket for JSON array
     println!("[");
-    
+
     let mut first = true;
-    
+
     // Print each result as a JSON object on a single line
     while let Some(result) = stream.next().await {
         // Add comma after previous item
         if !first {
             println!(",");
         }
-        
+
         // Convert domain result to JSON
         let json_str = serde_json::to_string(&result).unwrap_or_default();
         print!("{}", json_str);
-        
+
         if first {
             first = false;
         }
     }
-    
+
     // Add newline after the last item
     if !first {
         println!();
     }
-    
+
     // Print closing bracket for JSON array
     println!("]");
-    
+
     Ok(())
 }
 
