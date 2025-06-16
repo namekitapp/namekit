@@ -3,6 +3,7 @@ use futures_util::StreamExt;
 use output::{OutputMode, display_results};
 
 mod api;
+mod auth;
 mod config;
 mod domain;
 mod output;
@@ -43,6 +44,12 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigCommands,
     },
+
+    /// Authenticate with OAuth providers
+    Auth {
+        #[command(subcommand)]
+        action: AuthCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -78,6 +85,24 @@ enum ConfigCommands {
 
     /// Show the current configuration
     Show,
+}
+
+#[derive(Subcommand)]
+enum AuthCommands {
+    /// Login with Google OAuth
+    Google,
+
+    /// Login with GitHub OAuth
+    Github,
+
+    /// Show current authentication status
+    Status,
+
+    /// Get user information from auth server
+    Info,
+
+    /// Logout and clear stored tokens
+    Logout,
 }
 
 #[tokio::main]
@@ -204,6 +229,68 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     let path = config::get_config_path();
                     println!("Configuration file: {}", path.display());
+                }
+            }
+        }
+        Commands::Auth { action } => {
+            match action {
+                AuthCommands::Google => {
+                    println!("Starting Google OAuth flow...");
+                    match auth::login(auth::AuthProvider::Google).await {
+                        Ok(token) => {
+                            let mut config = config::Config::load()?;
+                            config.set_auth_token(token.access_token)?;
+                            println!("Google authentication successful!");
+                        }
+                        Err(e) => {
+                            eprintln!("Google authentication failed: {}", e);
+                        }
+                    }
+                }
+                AuthCommands::Github => {
+                    println!("Starting GitHub OAuth flow...");
+                    match auth::login(auth::AuthProvider::GitHub).await {
+                        Ok(token) => {
+                            let mut config = config::Config::load()?;
+                            config.set_auth_token(token.access_token)?;
+                            println!("GitHub authentication successful!");
+                        }
+                        Err(e) => {
+                            eprintln!("GitHub authentication failed: {}", e);
+                        }
+                    }
+                }
+                AuthCommands::Status => {
+                    let config = config::Config::load()?;
+                    match config.get_auth_token() {
+                        Ok(_) => println!("Authenticated"),
+                        Err(_) => println!("Not authenticated"),
+                    }
+                }
+                AuthCommands::Info => {
+                    let config = config::Config::load()?;
+                    match config.get_auth_token() {
+                        Ok(token) => {
+                            match auth::get_user_info(&token).await {
+                                Ok(user_info) => {
+                                    println!("User Information:");
+                                    println!("Email: {}", user_info.email);
+                                    println!("Tier: {}", user_info.tier);
+                                }
+                                Err(e) => {
+                                    eprintln!("Failed to get user info: {}", e);
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            eprintln!("Not authenticated. Please login first with 'namekit auth google' or 'namekit auth github'");
+                        }
+                    }
+                }
+                AuthCommands::Logout => {
+                    let mut config = config::Config::load()?;
+                    config.clear_auth_token()?;
+                    println!("Logged out successfully");
                 }
             }
         }

@@ -40,6 +40,7 @@ impl std::error::Error for ConfigError {}
 pub struct Config {
     pub api_token: Option<String>,
     pub api_server: Option<String>,
+    pub auth_token: Option<String>,
 }
 
 impl Default for Config {
@@ -47,6 +48,7 @@ impl Default for Config {
         Self {
             api_token: None,
             api_server: Some("https://api.namekit.app".to_string()),
+            auth_token: None,
         }
     }
 }
@@ -102,6 +104,22 @@ impl Config {
         self.api_server
             .clone()
             .unwrap_or_else(|| "https://api.namedrop.dev".to_string())
+    }
+
+    pub fn set_auth_token(&mut self, token: String) -> Result<(), ConfigError> {
+        self.auth_token = Some(token);
+        self.save()?;
+        Ok(())
+    }
+
+    pub fn get_auth_token(&self) -> Result<String, ConfigError> {
+        self.auth_token.clone().ok_or(ConfigError::TokenNotSet)
+    }
+
+    pub fn clear_auth_token(&mut self) -> Result<(), ConfigError> {
+        self.auth_token = None;
+        self.save()?;
+        Ok(())
     }
 }
 
