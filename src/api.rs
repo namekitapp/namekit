@@ -56,11 +56,17 @@ pub async fn stream_domains(
                     if !response.status().is_success() {
                         // Handle rate limiting (429 Too Many Requests) specifically
                         if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                            eprintln!("Rate limit reached");
                             eprintln!(
-                                "You've reached the limit of the free tier. Please visit https://namekit.app to upgrade your plan."
+                                "Visit https://namekit.app to upgrade your plan for unlimited searches"
+                            );
+                        } else if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+                            eprintln!("Authentication failed");
+                            eprintln!(
+                                "Your token may have expired. Try logging in again with 'namekit auth google' or 'namekit auth github'"
                             );
                         } else {
-                            eprintln!("API request failed with status: {}", response.status());
+                            eprintln!("API request failed: {}", response.status());
                         }
                         return;
                     }
@@ -114,12 +120,10 @@ pub async fn stream_domains(
                                                         // Channel closed, receiver dropped
                                                         return;
                                                     }
-                                                } else {
-                                                    println!("Ignoring unexpected JSON: {}", json);
                                                 }
                                             }
-                                            Err(e) => {
-                                                eprintln!("Error parsing JSON line: {}", e);
+                                            Err(_) => {
+                                                // Silently ignore malformed JSON lines
                                             }
                                         }
                                     }
@@ -128,8 +132,8 @@ pub async fn stream_domains(
                                     buffer = parts[parts.len() - 1].to_string();
                                 }
                             }
-                            Err(e) => {
-                                eprintln!("Error reading chunk: {}", e);
+                            Err(_) => {
+                                // Connection error, stop streaming
                                 break;
                             }
                         }
@@ -158,18 +162,18 @@ pub async fn stream_domains(
                                     let _ = tx.send(domain_result).await;
                                 }
                             }
-                            Err(e) => {
-                                eprintln!("Error parsing final JSON: {}", e);
+                            Err(_) => {
+                                // Silently ignore malformed final JSON
                             }
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("Error sending request: {}", e);
+                    eprintln!("Network error: {}", e);
                 }
             }
         } else {
-            eprintln!("Error loading config");
+            eprintln!("Configuration error");
         }
 
         // Channel will be closed when tx is dropped at the end of this function

@@ -83,7 +83,6 @@ pub async fn login(provider: AuthProvider) -> Result<AuthToken, AuthError> {
 
     // Start local HTTP server for OAuth callback
     let listener = TcpListener::bind(format!("{}:{}", CALLBACK_HOST, CALLBACK_PORT)).await?;
-    println!("Started local callback server on {}", callback_url);
 
     // Build the OAuth initiation URL
     let auth_url = format!(
@@ -93,13 +92,15 @@ pub async fn login(provider: AuthProvider) -> Result<AuthToken, AuthError> {
         urlencoding::encode(&callback_url)
     );
 
-    println!("Opening {} OAuth flow...", provider.name());
-    println!("Auth URL: {}", auth_url);
-    println!("Callback URL: {}", callback_url);
+    println!(
+        "Opening {} authentication in your browser...",
+        provider.name()
+    );
 
     // Try to open the URL in the default browser
-    if let Err(_) = open::that(&auth_url) {
-        println!("Could not automatically open browser. Please manually visit the URL above.");
+    if open::that(&auth_url).is_err() {
+        println!("Could not open browser automatically.");
+        println!("Please visit: {}", auth_url);
     }
 
     // Wait for the OAuth callback
@@ -121,15 +122,9 @@ pub async fn login(provider: AuthProvider) -> Result<AuthToken, AuthError> {
     }
 
     let path_and_query = parts[1];
-    println!("Received callback: {}", path_and_query);
 
     let url = Url::parse(&format!("http://localhost{}", path_and_query))
         .map_err(|e| AuthError::CallbackError(format!("Invalid callback URL: {}", e)))?;
-
-    println!("Parsed URL query pairs:");
-    for (key, value) in url.query_pairs() {
-        println!("  {} = {}", key, value);
-    }
 
     // Check if we received a direct token (auth server uses this flow)
     if let Some(token) = url
@@ -237,19 +232,13 @@ pub async fn get_user_info(token: &str) -> Result<UserInfo, AuthError> {
     let api_server = config.get_api_server();
     let info_url = format!("{}/auth/info", api_server);
 
-    println!("Fetching user info from: {}", info_url);
-
     let response = client
         .get(&info_url)
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
 
-    println!("User info response status: {}", response.status());
-
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-        println!("User info response text: {}", response.text().await?);
-
         return Err(AuthError::ServerError(
             "Authentication failed - token may be expired or invalid".to_string(),
         ));
@@ -260,7 +249,6 @@ pub async fn get_user_info(token: &str) -> Result<UserInfo, AuthError> {
             .text()
             .await
             .unwrap_or_else(|_| "Unknown error".to_string());
-        println!("User info error response: {}", error_text);
         return Err(AuthError::ServerError(format!(
             "Failed to get user info: {}",
             error_text
@@ -268,8 +256,6 @@ pub async fn get_user_info(token: &str) -> Result<UserInfo, AuthError> {
     }
 
     let response_text = response.text().await?;
-    println!("User info response body: {}", response_text);
-
     let user_info: UserInfo = serde_json::from_str(&response_text).map_err(|e| {
         AuthError::ServerError(format!("Failed to parse user info response: {}", e))
     })?;

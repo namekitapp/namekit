@@ -119,8 +119,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let token = match config.get_auth_token() {
                         Ok(token) => token,
                         Err(_) => {
+                            eprintln!("Authentication required");
                             eprintln!(
-                                "Not authenticated. Please authenticate with 'namekit auth google' or 'namekit auth github'"
+                                "Run 'namekit auth google' or 'namekit auth github' to get started"
                             );
                             return Ok(());
                         }
@@ -141,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             display_results(filtered_stream, output_mode).await?;
                         }
                         Err(e) => {
-                            eprintln!("Error fetching domain results: {}", e);
+                            eprintln!("Failed to search domains: {}", e);
                         }
                     }
                 }
@@ -151,8 +152,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let token = match config.get_auth_token() {
                         Ok(token) => token,
                         Err(_) => {
+                            eprintln!("Authentication required");
                             eprintln!(
-                                "Not authenticated. Please authenticate with 'namekit auth google' or 'namekit auth github'"
+                                "Run 'namekit auth google' or 'namekit auth github' to get started"
                             );
                             return Ok(());
                         }
@@ -173,7 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             display_results(filtered_stream, output_mode).await?;
                         }
                         Err(e) => {
-                            eprintln!("Error fetching domain results: {}", e);
+                            eprintln!("Failed to search domains: {}", e);
                         }
                     }
                 }
@@ -183,61 +185,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ConfigCommands::SetApiServer { server } => {
                 let mut config = config::Config::load()?;
                 config.set_api_server(server.clone())?;
-                println!("API server set to: {}", server);
+                println!("API server updated to: {}", server);
 
-                // Show the config file path for reference
                 let path = config::get_config_path();
                 println!("Configuration saved to: {}", path.display());
             }
             ConfigCommands::Show => {
                 let config = config::Config::load()?;
-                println!("Current configuration:");
+                println!("Namekit Configuration");
+                println!();
 
                 // Show authentication status
                 match config.get_auth_token() {
-                    Ok(_) => println!("Authentication: OAuth token present"),
+                    Ok(_) => println!("Authentication: Authenticated"),
                     Err(_) => println!("Authentication: Not authenticated"),
                 }
 
                 // Show the API server
                 println!("API Server: {}", config.get_api_server());
+                println!();
 
                 let path = config::get_config_path();
-                println!("Configuration file: {}", path.display());
+                println!("Config file: {}", path.display());
             }
         },
         Commands::Auth { action } => match action {
-            AuthCommands::Google => {
-                println!("Starting Google OAuth flow...");
-                match auth::login(auth::AuthProvider::Google).await {
-                    Ok(token) => {
-                        let mut config = config::Config::load()?;
-                        config.set_auth_token(token.access_token)?;
-                        println!("Google authentication successful!");
-                    }
-                    Err(e) => {
-                        eprintln!("Google authentication failed: {}", e);
-                    }
+            AuthCommands::Google => match auth::login(auth::AuthProvider::Google).await {
+                Ok(token) => {
+                    let mut config = config::Config::load()?;
+                    config.set_auth_token(token.access_token)?;
+                    println!("Successfully authenticated with Google");
+                    println!("You can now search for domains!");
                 }
-            }
-            AuthCommands::Github => {
-                println!("Starting GitHub OAuth flow...");
-                match auth::login(auth::AuthProvider::GitHub).await {
-                    Ok(token) => {
-                        let mut config = config::Config::load()?;
-                        config.set_auth_token(token.access_token)?;
-                        println!("GitHub authentication successful!");
-                    }
-                    Err(e) => {
-                        eprintln!("GitHub authentication failed: {}", e);
-                    }
+                Err(e) => {
+                    eprintln!("Google authentication failed: {}", e);
                 }
-            }
+            },
+            AuthCommands::Github => match auth::login(auth::AuthProvider::GitHub).await {
+                Ok(token) => {
+                    let mut config = config::Config::load()?;
+                    config.set_auth_token(token.access_token)?;
+                    println!("Successfully authenticated with GitHub");
+                    println!("You can now search for domains!");
+                }
+                Err(e) => {
+                    eprintln!("GitHub authentication failed: {}", e);
+                }
+            },
             AuthCommands::Status => {
                 let config = config::Config::load()?;
                 match config.get_auth_token() {
-                    Ok(_) => println!("Authenticated"),
-                    Err(_) => println!("Not authenticated"),
+                    Ok(_) => println!("Status: Authenticated"),
+                    Err(_) => println!("Status: Not authenticated"),
                 }
             }
             AuthCommands::Info => {
@@ -245,7 +244,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match config.get_auth_token() {
                     Ok(token) => match auth::get_user_info(&token).await {
                         Ok(user_info) => {
-                            println!("User Information:");
+                            println!("User Information");
+                            println!();
                             println!("Email: {}", user_info.email);
                             println!("Tier: {}", user_info.tier);
                         }
@@ -254,8 +254,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     },
                     Err(_) => {
+                        eprintln!("Not authenticated");
                         eprintln!(
-                            "Not authenticated. Please login first with 'namekit auth google' or 'namekit auth github'"
+                            "Run 'namekit auth google' or 'namekit auth github' to get started"
                         );
                     }
                 }
@@ -263,7 +264,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             AuthCommands::Logout => {
                 let mut config = config::Config::load()?;
                 config.clear_auth_token()?;
-                println!("Logged out successfully");
+                println!("Successfully logged out");
+                println!("Your authentication token has been cleared");
             }
         },
     }
