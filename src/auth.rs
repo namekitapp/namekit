@@ -131,14 +131,41 @@ pub async fn login(provider: AuthProvider) -> Result<AuthToken, AuthError> {
         println!("  {} = {}", key, value);
     }
 
-    // Check if we received a direct token (simplified flow) or authorization code
+    // Check if we received a direct token (auth server uses this flow)
     if let Some(token) = url
         .query_pairs()
         .find(|(key, _)| key == "token")
         .map(|(_, value)| value.to_string())
     {
-        // Direct token flow - no need to exchange code
-        let response = "HTTP/1.1 200 OK\r\n\r\n<html><body><h1>Authentication successful!</h1><p>You can close this tab and return to the terminal.</p></body></html>";
+        // Direct token flow - auth server returns JWT directly
+        let response = r#"HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Namekit - Authentication Successful</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="https://namekit.app/images/icon512.png">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; margin: 0; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 90vh; display: flex; flex-direction: column; justify-content: center; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .logo { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 16px; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; }
+        p { font-size: 1.2em; opacity: 0.9; margin-bottom: 30px; }
+        .success-icon { font-size: 4em; margin-bottom: 20px; color: #4ade80; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://namekit.app/images/icon512.png" alt="Namekit" class="logo">
+        <h1>Authentication Successful!</h1>
+        <p>You've successfully authenticated with Namekit.</p>
+        <p>You can now close this window and return to the terminal.</p>
+    </div>
+</body>
+</html>"#;
         stream.write_all(response.as_bytes()).await?;
         stream.flush().await?;
 
@@ -149,78 +176,50 @@ pub async fn login(provider: AuthProvider) -> Result<AuthToken, AuthError> {
         });
     }
 
-    // Standard OAuth flow with authorization code
-    let response = if url.query_pairs().any(|(key, _)| key == "code") {
-        "HTTP/1.1 200 OK\r\n\r\n<html><body><h1>Authentication successful!</h1><p>You can close this tab and return to the terminal.</p></body></html>"
-    } else {
-        "HTTP/1.1 400 Bad Request\r\n\r\n<html><body><h1>Authentication failed!</h1><p>Please try again.</p></body></html>"
-    };
+    // No token received - this is an error
+    let error = url
+        .query_pairs()
+        .find(|(key, _)| key == "error")
+        .map(|(_, value)| value.to_string())
+        .unwrap_or_else(|| "No token received".to_string());
+
+    let response = r#"HTTP/1.1 400 Bad Request
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Namekit - Authentication Failed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="https://namekit.app/images/icon512.png">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; margin: 0; padding: 40px 20px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; min-height: 90vh; display: flex; flex-direction: column; justify-content: center; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .logo { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 16px; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; }
+        p { font-size: 1.2em; opacity: 0.9; margin-bottom: 30px; }
+        .error-icon { font-size: 4em; margin-bottom: 20px; color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://namekit.app/images/icon512.png" alt="Namekit" class="logo">
+        <div class="error-icon">❌</div>
+        <h1>Authentication Failed</h1>
+        <p>Something went wrong during authentication.</p>
+        <p>Please close this window and try again.</p>
+    </div>
+</body>
+</html>"#;
 
     stream.write_all(response.as_bytes()).await?;
     stream.flush().await?;
 
-    // Extract authorization code from callback
-    let auth_code = url
-        .query_pairs()
-        .find(|(key, _)| key == "code")
-        .map(|(_, value)| value.to_string())
-        .ok_or_else(|| {
-            // Check for error parameter
-            let error = url
-                .query_pairs()
-                .find(|(key, _)| key == "error")
-                .map(|(_, value)| value.to_string())
-                .unwrap_or_else(|| "Unknown error".to_string());
-            AuthError::CallbackError(format!("OAuth failed: {}", error))
-        })?;
-
-    // Exchange authorization code for access token
-    exchange_code_for_token(&auth_code, &callback_url, &provider).await
-}
-
-async fn exchange_code_for_token(
-    code: &str,
-    redirect_uri: &str,
-    provider: &AuthProvider,
-) -> Result<AuthToken, AuthError> {
-    let client = Client::new();
-    let token_url = format!("{}/token", AUTH_SERVER);
-
-    let provider_name = provider.name().to_lowercase();
-    let params = [
-        ("grant_type", "authorization_code"),
-        ("code", code),
-        ("redirect_uri", redirect_uri),
-        ("provider", provider_name.as_str()),
-    ];
-
-    println!("Exchanging code for token...");
-    println!("Token URL: {}", token_url);
-    println!("Request params: {:?}", params);
-
-    let response = client.post(&token_url).form(&params).send().await?;
-
-    println!("Token exchange response status: {}", response.status());
-
-    if !response.status().is_success() {
-        let error_text = response
-            .text()
-            .await
-            .unwrap_or_else(|_| "Unknown error".to_string());
-        println!("Token exchange error response: {}", error_text);
-        return Err(AuthError::ServerError(format!(
-            "Token exchange failed: {}",
-            error_text
-        )));
-    }
-
-    let response_text = response.text().await?;
-    println!("Token exchange response body: {}", response_text);
-
-    let token: AuthToken = serde_json::from_str(&response_text)
-        .map_err(|e| AuthError::ServerError(format!("Failed to parse token response: {}", e)))?;
-
-    Ok(token)
+    Err(AuthError::CallbackError(format!(
+        "Authentication failed: {}",
+        error
+    )))
 }
 
 pub async fn get_user_info(token: &str) -> Result<UserInfo, AuthError> {
